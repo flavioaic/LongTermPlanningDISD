@@ -1,5 +1,19 @@
 source("./parametriConnessioniFile.R")
 
+print("#### Esecuzione iniziata ####")
+
+n <- readline(prompt="Vuoi Salvare i file (y/n): ")
+
+if( n == 'y' || n == 'yes'){
+  saveFile = TRUE
+} else if ( n == 'n' || n == 'no') {
+  saveFile = FALSE
+} else {
+  saveFile = FALSE;
+}
+
+sprintf("#### Salvataggio File: %s ####", saveFile)
+
 # Questo script serve a valutare la correlazione tra la query effettuata sul db e le statistiche
 # reperibili sul sito ufficiale dell'aeroporto, nello stesso periodo di tempo di quest'ultimo.
 #
@@ -133,9 +147,9 @@ dom.dep.db.window <- window(dom.dep.db, start = startDateSito, end=endDateSito, 
 
 
 
-plotConfrontoSerie <- function(serieSito, serieDB, title, save = TRUE){
+plotConfrontoSerie <- function(serieSito, serieDB, title, save = FALSE){
   if(save){
-    File <- paste("./confrontoSerie/",title,".jpg")
+    File <- paste("./InterpretazioneDB/confrontoSerie/",title,".jpg")
     if (!file.exists(File))  dir.create(dirname(File), showWarnings = FALSE)
     png(File, width = 1200, height = 800)
   }
@@ -147,6 +161,12 @@ plotConfrontoSerie <- function(serieSito, serieDB, title, save = TRUE){
   
   if(save){
     dev.off()
+  }
+  
+  if(save){
+    File <- paste("./InterpretazioneDB/confrontoSerie/AreaChart",title,".jpg")
+    if (!file.exists(File))  dir.create(dirname(File), showWarnings = FALSE)
+    png(File, width = 1200, height = 800)
   }
   
   df <- data.frame(Y=as.matrix(serieSito), date=as.Date(as.yearmon(time(serieSito))))
@@ -163,6 +183,10 @@ plotConfrontoSerie <- function(serieSito, serieDB, title, save = TRUE){
          y="Numero voli", x = "Data")+
     scale_fill_manual("Serie:", values=c("red", "blue"))+
     scale_y_continuous(limits=c(min,max),oob = rescale_none)
+  
+  if(save){
+    dev.off()
+  }
   
 }
 
@@ -195,7 +219,7 @@ printTableDifference <- function(dataFrame, title, save = FALSE){
     1, 1, 1, ncol(table))
   
   if(save){
-    File <- paste("./InterpretazioneDB/",title,".jpg")
+    File <- paste("./InterpretazioneDB/confrontoSerie/",title,".jpg")
     if (!file.exists(File))  dir.create(dirname(File), showWarnings = FALSE)
     png(File, width = 1200, height = 800)
   }
@@ -217,36 +241,36 @@ dfDifferenze <- data.frame()
 # VALUTAZIONE QUERY SU DB - 1° ROUND --------------------------------------
 # Realizza grafici comparativi tra i dati estratti dal db e quelli delle statistiche ufficiali
 
-plotConfrontoSerie(reg.arr.ss,reg.arr.db.window,"Confronto Arrivi Reg Sito vs DB", FALSE)
+plotConfrontoSerie(reg.arr.ss,reg.arr.db.window,"Confronto Arrivi Reg Sito vs DB", saveFile)
 result <- showErrorConfrontoSerie(reg.arr.ss,reg.arr.db.window, "Errori Arrivi Reg Sito vs Arrivi DB", dfDifferenze, "Arrv Reg")
 dfDifferenze <- rbind(dfDifferenze, result)
 
 
-plotConfrontoSerie(reg.dep.ss,reg.dep.db.window,"Confronto Dep Reg Sito vs DB", FALSE)
+plotConfrontoSerie(reg.dep.ss,reg.dep.db.window,"Confronto Dep Reg Sito vs DB", saveFile)
 result <- showErrorConfrontoSerie(reg.dep.ss,reg.dep.db.window, "Errori Dep Reg Sito vs Arrivi DB", dfDifferenze, "Dep Reg")
 dfDifferenze <- rbind(dfDifferenze, result)
 
-plotConfrontoSerie(int.arr.ss,int.arr.db.window, "Confronto Arr Int Sito vs DB", FALSE)
+plotConfrontoSerie(int.arr.ss,int.arr.db.window, "Confronto Arr Int Sito vs DB", saveFile)
 result <- showErrorConfrontoSerie(int.arr.ss,int.arr.db.window, "Errori Arr Int Sito vs Arrivi DB", dfDifferenze, "Arr Int")
 dfDifferenze <- rbind(dfDifferenze, result)
 
-plotConfrontoSerie(int.dep.ss,int.dep.db.window, "Confronto Dep Int Sito vs DB", FALSE)
+plotConfrontoSerie(int.dep.ss,int.dep.db.window, "Confronto Dep Int Sito vs DB", saveFile)
 result <- showErrorConfrontoSerie(int.dep.ss,int.dep.db.window, "Errori Dep Int Sito vs Arrivi DB", dfDifferenze, "Dep Int" )
 dfDifferenze <- rbind(dfDifferenze, result)
 
 
-plotConfrontoSerie(dom.arr.ss,dom.arr.db.window, "Confronto Arr Dom Sito vs DB", FALSE)
+plotConfrontoSerie(dom.arr.ss,dom.arr.db.window, "Confronto Arr Dom Sito vs DB", saveFile)
 result <- showErrorConfrontoSerie(dom.arr.ss,dom.arr.db.window, "Errori Arr Dom Sito vs Arrivi DB", dfDifferenze, "Arr Dom"  )
 dfDifferenze <- rbind(dfDifferenze, result)
 
 
-plotConfrontoSerie(dom.dep.ss,dom.dep.db.window, "Confronto Dep Dom Sito vs DB", FALSE)
+plotConfrontoSerie(dom.dep.ss,dom.dep.db.window, "Confronto Dep Dom Sito vs DB", saveFile)
 result <- showErrorConfrontoSerie(dom.dep.ss,dom.dep.db.window, "Errori Dep Dom Sito vs Arrivi DB", dfDifferenze, "Dep Dom"  )
 dfDifferenze <- rbind(dfDifferenze, result)
 
 
 
-printTableDifference(dfDifferenze, "Numero Voli Sito vs DB", FALSE)
+printTableDifference(dfDifferenze, "Numero Voli Sito vs DB", saveFile)
 
 
 # AGGIUSTAMENTO QUERY SU DB - 2° ROUND ------------------------------------
@@ -272,7 +296,7 @@ int.dep.aflight.transit<- sqlQuery(dbhandle, "SELECT count(*) as CONTO, DATEPART
 int.dep.db.transit <- ts(int.dep.aflight.transit$CONTO, frequency=12, start=2012+3/12, end=endDateSito)
 int.dep.db2 <- int.dep.db.window+int.dep.db.transit
 
-plotConfrontoSerie(int.dep.ss,int.dep.db2,"Confronto Migliorato Dep Int Sito vs DB", FALSE)
+plotConfrontoSerie(int.dep.ss,int.dep.db2,"Confronto Migliorato Dep Int Sito vs DB", saveFile)
 result <- showErrorConfrontoSerie(int.dep.ss,int.dep.db2, "Confronto Migliorato Dep Int Sito vs DB", dfDifferenze, "Dep Int Migli I")
 dfDifferenze <- rbind(dfDifferenze, result)
 
@@ -292,7 +316,7 @@ int.arr.aflight.transit<- sqlQuery(dbhandle, "SELECT count(*) as CONTO, DATEPART
 int.arr.db.transit <- ts(int.arr.aflight.transit$CONTO, frequency=12, start=2012+3/12, end=endDateSito)
 int.arr.db2 <- int.arr.db+int.arr.db.transit
 
-plotConfrontoSerie(int.arr.ss,int.arr.db2,"Confronto Migliorato Arr Int Sito vs DB", FALSE)
+plotConfrontoSerie(int.arr.ss,int.arr.db2,"Confronto Migliorato Arr Int Sito vs DB", saveFile)
 result <- showErrorConfrontoSerie(int.arr.ss,int.arr.db2, "Confronto Migliorato Arr Int Sito vs DB", dfDifferenze, "Arr Int Migli I" )
 dfDifferenze <- rbind(dfDifferenze, result)
 ### DOMESTICI
@@ -311,11 +335,11 @@ dom.dep.aflight.transit<- sqlQuery(dbhandle, "SELECT count(*) as CONTO, DATEPART
 dom.dep.db.transit <- ts(dom.dep.aflight.transit$CONTO, frequency=12, start=2012+3/12, end=endDateSito)
 dom.dep.db2 <- dom.dep.db+dom.dep.db.transit
 
-plotConfrontoSerie(dom.dep.ss,dom.dep.db2,"Confronto Migliorato Dep Dom Sito vs DB", FALSE)
+plotConfrontoSerie(dom.dep.ss,dom.dep.db2,"Confronto Migliorato Dep Dom Sito vs DB", saveFile)
 result <- showErrorConfrontoSerie(dom.dep.ss,dom.dep.db2, "Confronto Migliorato Dep Dom Sito vs DB", dfDifferenze, "Dep Dom Migli I")
 dfDifferenze <- rbind(dfDifferenze, result)
 
-printTableDifference(dfDifferenze, "Numero Voli Sito vs DB Migliorato I", FALSE)
+printTableDifference(dfDifferenze, "Numero Voli Sito vs DB Migliorato I", saveFile)
 
 
 # PROVIAMO A MIGLIORARE ULTERIORMENTE - 3? ROUND --------------------------
@@ -334,63 +358,63 @@ dom.arr.aflight.transit<- sqlQuery(dbhandle, "SELECT count(*) as CONTO, DATEPART
 dom.arr.db.transit <- ts(dom.arr.aflight.transit$CONTO, frequency=12, start=2012+2/12, end=endDateSito)
 dom.arr.db2 <- dom.arr.db+dom.arr.db.transit
 
-plotConfrontoSerie(dom.arr.ss,dom.arr.db2,"Confronto Migliorato II Dep Dom Sito vs DB", FALSE)
+plotConfrontoSerie(dom.arr.ss,dom.arr.db2,"Confronto Migliorato II Dep Dom Sito vs DB", saveFile)
 resutl <- showErrorConfrontoSerie(dom.arr.ss,dom.arr.db2, "Confronto Migliorato II Dep Dom Sito vs DB", dfDifferenze, "Dep Dom Migli II")
 dfDifferenze <- rbind(dfDifferenze, result)
-printTableDifference(dfDifferenze, "Numero Voli Sito vs DB Migliorato II", FALSE)
+printTableDifference(dfDifferenze, "Numero Voli Sito vs DB Migliorato II", saveFile)
 
 
 
-#Confronto serie storiche db con serie storiche
+#Confronto serie storiche db (complete) con serie storiche sito
 
-plotConfrontoSerie(reg.arr.ss,reg.arr.db,"Confronto Arrivi Reg Sito vs DB Completo", FALSE)
-result <- showErrorConfrontoSerie(reg.arr.ss,reg.arr.db, "Errori Arrivi Reg Sito vs Arrivi DB Completo", dfDifferenze, "Arrv Reg")
+plotConfrontoSerie(reg.arr.ss,reg.arr.db,"Confronto Arrivi Reg Sito vs DB Completo", saveFile)
+result <- showErrorConfrontoSerie(reg.arr.ss,reg.arr.db, "Errori Arrivi Reg Sito vs Arrivi DB Completo", dfDifferenze, "Comp Arrv Reg")
 dfDifferenze <- rbind(dfDifferenze, result)
 
 
-plotConfrontoSerie(reg.dep.ss,reg.dep.dd,"Confronto Dep Reg Sito vs DB Completo", FALSE)
-result <- showErrorConfrontoSerie(reg.dep.ss,reg.dep.db, "Errori Dep Reg Sito vs Arrivi DB Completo", dfDifferenze, "Dep Reg")
+plotConfrontoSerie(reg.dep.ss,reg.dep.db,"Confronto Dep Reg Sito vs DB Completo", saveFile)
+result <- showErrorConfrontoSerie(reg.dep.ss,reg.dep.db, "Errori Dep Reg Sito vs Arrivi DB Completo", dfDifferenze, "Comp Dep Reg")
 dfDifferenze <- rbind(dfDifferenze, result)
 
-plotConfrontoSerie(int.arr.ss,int.arr.db, "Confronto Arr Int Sito vs DB Completo", FALSE)
-result <- showErrorConfrontoSerie(int.arr.ss,int.arr.db, "Errori Arr Int Sito vs Arrivi DB Completo", dfDifferenze, "Arr Int")
+plotConfrontoSerie(int.arr.ss,int.arr.db, "Confronto Arr Int Sito vs DB Completo", saveFile)
+result <- showErrorConfrontoSerie(int.arr.ss,int.arr.db, "Errori Arr Int Sito vs Arrivi DB Completo", dfDifferenze, "Comp Arr Int")
 dfDifferenze <- rbind(dfDifferenze, result)
 
-plotConfrontoSerie(int.dep.ss,int.dep.db, "Confronto Dep Int Sito vs DB Completo", FALSE)
-result <- showErrorConfrontoSerie(int.dep.ss,int.dep.db, "Errori Dep Int Sito vs Arrivi DB Completo", dfDifferenze, "Dep Int" )
-dfDifferenze <- rbind(dfDifferenze, result)
-
-
-plotConfrontoSerie(dom.arr.ss,dom.arr.db, "Confronto Arr Dom Sito vs DB Completo", FALSE)
-result <- showErrorConfrontoSerie(dom.arr.ss,dom.arr.db, "Errori Arr Dom Sito vs Arrivi DB Completo", dfDifferenze, "Arr Dom"  )
+plotConfrontoSerie(int.dep.ss,int.dep.db, "Confronto Dep Int Sito vs DB Completo", saveFile)
+result <- showErrorConfrontoSerie(int.dep.ss,int.dep.db, "Errori Dep Int Sito vs Arrivi DB Completo", dfDifferenze, "Comp Dep Int" )
 dfDifferenze <- rbind(dfDifferenze, result)
 
 
-plotConfrontoSerie(dom.dep.ss,dom.dep.db.window, "Confronto Dep Dom Sito vs DB", FALSE)
-result <- showErrorConfrontoSerie(dom.dep.ss,dom.dep.db.window, "Errori Dep Dom Sito vs Arrivi DB", dfDifferenze, "Dep Dom"  )
+plotConfrontoSerie(dom.arr.ss,dom.arr.db, "Confronto Arr Dom Sito vs DB Completo", saveFile)
+result <- showErrorConfrontoSerie(dom.arr.ss,dom.arr.db, "Errori Arr Dom Sito vs Arrivi DB Completo", dfDifferenze, "Comp Arr Dom"  )
 dfDifferenze <- rbind(dfDifferenze, result)
 
 
+plotConfrontoSerie(dom.dep.ss,dom.dep.db.window, "Confronto Dep Dom Sito vs DB", saveFile)
+result <- showErrorConfrontoSerie(dom.dep.ss,dom.dep.db.window, "Errori Dep Dom Sito vs Arrivi DB", dfDifferenze, "Comp Dep Dom"  )
+dfDifferenze <- rbind(dfDifferenze, result)
 
-printTableDifference(dfDifferenze, "Numero Voli Sito vs DB", FALSE)
 
+printTableDifference(dfDifferenze, "Numero Voli Sito vs DB", saveFile)
+
+print("#### Esecuzione terminata. File salvati in InterpretazioneDB/confrontoSerie/ ####")
 
 # PASSAGGIO DATI PER ANALISI E MODELLI PREVISIONALI TS --------------------
 # In questa sezione, i dati estratti vengono inviati a script dedicati per l'applicazione
 # dei modelli decisionali.
 # NOTA BENE: per il momento ci concentriamo su una sola componente.
-source("serie_aeroporto.R")  #dom.arr 1
-source("serie_aeroporto.R")  #dom.dep 2
-source("serie_aeroporto.R")  #int.arr 3
-source("serie_aeroporto.R")  #int.dep 4
-source("serie_aeroporto.R")  #reg.arr 5
-source("serie_aeroporto.R")  #reg.dep 6
-
-source("serie_aeroporto_arima.R")  #dom.arr 1
-source("serie_aeroporto_arima.R")  #dom.dep 2
-source("serie_aeroporto_arima.R")  #int.arr 3
-source("serie_aeroporto_arima.R")  #int.dep 4
-source("serie_aeroporto_arima.R")  #reg.arr 5
-source("serie_aeroporto_arima.R")  #reg.dep 6
+# source("serie_aeroporto.R")  #dom.arr 1
+# source("serie_aeroporto.R")  #dom.dep 2
+# source("serie_aeroporto.R")  #int.arr 3
+# source("serie_aeroporto.R")  #int.dep 4
+# source("serie_aeroporto.R")  #reg.arr 5
+# source("serie_aeroporto.R")  #reg.dep 6
+# 
+# source("serie_aeroporto_arima.R")  #dom.arr 1
+# source("serie_aeroporto_arima.R")  #dom.dep 2
+# source("serie_aeroporto_arima.R")  #int.arr 3
+# source("serie_aeroporto_arima.R")  #int.dep 4
+# source("serie_aeroporto_arima.R")  #reg.arr 5
+# source("serie_aeroporto_arima.R")  #reg.dep 6
 
 

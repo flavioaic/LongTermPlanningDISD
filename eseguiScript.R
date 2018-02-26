@@ -1,3 +1,7 @@
+#Modulo1 - Interpretazione db
+source("InterpretazioneDB\\caricamento_serie_da_db.R", echo = TRUE)
+
+
 #crea le rotte 1
 source("AnalisiDatabaseDataMining\\rotte2.R", echo = TRUE)
 #crea le rotte 2
