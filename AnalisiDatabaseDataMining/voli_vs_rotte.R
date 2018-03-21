@@ -1,5 +1,6 @@
 library(RODBC)
 dbhandle <-odbcDriverConnect(connection="Driver={SQL Server};server=DESKTOP-32KTKVV;database=AMs516;trusted_connection=yes;")
+getwd()
 
 # a_flight <- sqlQuery(dbhandle,"select * from A_FLIGHT")
 # colnames(a_flight)
@@ -21,18 +22,21 @@ tabella_class <- tabella_class[which(tabella_class$FLIGHT_TYPE_ID!=4),]
 # GRAFICI  ----------------------------------------------------------------
 library(dplyr)
 # Facciamo un join tra la tabella A_FLIGHT e quella ricavata per le "rotte"(che ora include le distanze)
-voli_rotte <- inner_join(tabella_class,rotte.agg2,by=c("ROUTE_ID"="ID"))
+voli_rotte <- left_join(tabella_class,rotte.agg2,by=c("ROUTE_ID"="ID"))
 
 # Rappresentazione grafica n.1
-# plot(voli_rotte$distanza,voli_rotte$MTOW)
+plot(voli_rotte$distanza,voli_rotte$MTOW)
 
 # Rappresentazione grafica n.2: proviamo a diversificare per regional, international e domestic
 library(tidyverse) # Serve per caricare ggplot
 FLIGHT_TYPE <- sqlQuery(dbhandle,"SELECT * FROM S_FLIGHT_TYPE") # scarichiamo le categorie...
 voli_rotte2 <- left_join(voli_rotte,FLIGHT_TYPE,by=c("FLIGHT_TYPE_ID.x"="ID"))
-# voli_rotte2 <- inner_join(FLIGHT_TYPE, voli_rotte,by=c("ID"="FLIGHT_TYPE_ID.x"))
 voli_rotte2 <- subset(voli_rotte2, select=-c(CHARGE, FIDS, DESCRIPTION2, DESCRIPTION3, DESCRIPTION4, DESCRIPTION5))#facciamo un po' di pulizia...
 
-# Pulizia
-rm(FLIGHT_TYPE, flights, tabella_class, voli_rotte)
+#                          Facciamo un modello di regressione lineare:
+abline(lm(voli_rotte2$MTOW ~ voli_rotte2$distanza))
+#                          Scopriamo un pattern interessante (e atteso): il MTOW cresce con la distanza associata alla rotta!
+#                          questo vuol dire che aerei più grandi sono impiegati per percorrere distanze più lunghe!
+
+
 
