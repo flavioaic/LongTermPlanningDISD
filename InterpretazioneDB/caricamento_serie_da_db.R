@@ -125,7 +125,7 @@ dom.dep.db <- ts(dom.dep.aflight$CONTO, frequency=12, start=startSeriesDB)
 #serie storiche sito
 serie.storica <- read.csv2(param.file.voliStatisticheSito.csv, header= TRUE)
 # Pulisci la serie da quello che non serve.
-serie.storica <- serie.storica[1:69,]
+serie.storica <- serie.storica[1:71,]
 startDateSito <- c(2012,4)
 endDateSito <- c(2017,3)
 # Trasforma in serie storiche con  start date e end date uguale al db
